@@ -326,7 +326,7 @@ button{font-family:inherit;cursor:pointer}
 <script>
 /* Tải nhanh: chạy qua máy chủ → ảnh/mô hình là file riêng (trình duyệt lưu cache, tải theo khu).
    Mở trực tiếp file:// → nạp bản nhúng textures.js + buddha_glb.js như trước. */
-window.ASSET_V = 'cd40b198a1';
+window.ASSET_V = 'cd40b198a2';
 (function () { var file = location.protocol === 'file:'; function s(src, cb) { var e = document.createElement('script'); e.src = src; e.async = false; if (cb) e.onload = e.onerror = cb; document.head.appendChild(e); }
   if (file) { s('textures.js'); s('buddha_glb.js'); s('app.js'); } else if ('noModule' in HTMLScriptElement.prototype) { var m = document.createElement('script'); m.type = 'module'; m.src = 'js/main.js?v=' + window.ASSET_V; document.head.appendChild(m); } else s('app.js?v=' + window.ASSET_V); })();
 </script>
