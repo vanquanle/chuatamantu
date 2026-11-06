@@ -1,0 +1,42 @@
+CHÙA TÂM AN – GHI CÔNG / CREDITS
+================================
+
+1) Tượng Phật 3D mặc định (?buddha=a, nhúng sẵn trong buddha_glb.js)
+   "Buddha Statue (photogrammetry)" – tác giả Austin Beaulier (austinbeaulier.com)
+   Giấy phép: Creative Commons Attribution 4.0 (CC BY 4.0) – https://creativecommons.org/licenses/by/4.0/
+   Nguồn: https://zenodo.org/records/10384250  (DOI 10.5281/zenodo.10384250, bản lưu trữ Objaverse 1.0)
+          https://sketchfab.com/3d-models/buddha-statue-photogrammetry-4050463a31cb4a9b9c0727e5758fb50d
+   Đã chỉnh sửa: giảm lưới, nén meshopt, đổi chất liệu sang thếp vàng PBR, tô màu tóc, đặt lên đài sen.
+
+2) Tượng Phật phương án B (?buddha=b, assets/models/buddha-b.glb)
+   "Golden Buddha (Memento)" – tác giả pixelio
+   Giấy phép: CC BY 4.0 – https://zenodo.org/records/10333228 (DOI 10.5281/zenodo.10333228)
+   Đã chỉnh sửa: giảm lưới, nén, đổi chất liệu.
+
+   ?buddha=code  → dùng tượng Phật dựng bằng mã (không dùng mô hình bên ngoài).
+
+3) three.js r170 – MIT License – https://threejs.org
+4) Phông chữ Be Vietnam Pro & Cormorant Garamond – SIL Open Font License 1.1
+5) Âm lịch Việt Nam: theo thuật toán công bố của Hồ Ngọc Đức (viết lại bằng JavaScript).
+6) Kết cấu, ảnh nền 2D: tự tạo cho dự án. Âm thanh: tổng hợp bằng Web Audio trong trình duyệt.
+7) Cảnh Hồ Hoa Đăng được dựng mới hoàn toàn bằng mã, chỉ lấy cảm hứng chung (hồ, lầu, cầu đá) – không sao chép ảnh tham khảo.
+
+Ghi chú: thông tin giấy phép lấy từ bản ghi Zenodo/Objaverse; nếu dùng thương mại nên kiểm tra lại trang gốc của tác giả.
+
+Phông chữ thư pháp / chữ ký (Thầy đồ) — SIL Open Font License 1.1, tải từ github.com/google/fonts, đã subset Latin + tiếng Việt:
+- Dancing Script (Impallari Type) — fonts/OFL-dancingscript.txt
+- Vujahday Script (Robert Leuschke) — fonts/OFL-vujahdayscript.txt
+- Great Vibes (Robert Leuschke) — fonts/OFL-greatvibes.txt
+- Corinthia (Robert Leuschke) — fonts/OFL-corinthia.txt
+- Mea Culpa (Robert Leuschke) — fonts/OFL-meaculpa.txt
+
+== Cửa hàng lưu niệm (Nov 2026) ==
+- Hình nền nen_phat.jpg, nen_sen.jpg, nen_chua.jpg (server/shopfiles + ảnh nhỏ shop/thumb_*.jpg): ảnh tự tạo cho Chùa Tâm An, không sao chép ảnh của bên thứ ba.
+- Âm thanh chuong_mo.mp3, chuong_thien.mp3: tự tổng hợp bằng mã (sóng sin mô phỏng chuông và mõ), không dùng bản thu của bên thứ ba.
+- Mô hình 3D gian hàng và vật phẩm: dựng bằng hình khối Three.js trong mã nguồn dự án.
+
+Bổ sung (11/2026):
+- Lư hương đồng, nghê đá, Vườn La Hán, Tháp Xá Lợi, cây bồ đề nâng cấp, bàn thờ gia tiên, nhân vật chibi và trang phục: tự dựng bằng code (three.js), không dùng mô hình/hình ảnh của bên thứ ba.
+- Hình minh họa SVG trong "Lịch sử Phật pháp": tự vẽ bằng code.
+- Truyện hay: kể lại bằng lời văn riêng từ các truyện dân gian / kinh điển Phật giáo thuộc phạm vi công cộng (Jataka, công án Thiền...).
+- Thông tin 18 vị La Hán: tổng hợp từ nguồn công khai, viết lại bằng lời riêng.
