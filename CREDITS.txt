@@ -40,3 +40,5 @@ Bổ sung (11/2026):
 - Hình minh họa SVG trong "Lịch sử Phật pháp": tự vẽ bằng code.
 - Truyện hay: kể lại bằng lời văn riêng từ các truyện dân gian / kinh điển Phật giáo thuộc phạm vi công cộng (Jataka, công án Thiền...).
 - Thông tin 18 vị La Hán: tổng hợp từ nguồn công khai, viết lại bằng lời riêng.
+
+xxx
