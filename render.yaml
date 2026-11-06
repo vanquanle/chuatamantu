@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: chua-tam-an
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: PUBLIC_URL
+        sync: false
+      # Bật PayOS (tuỳ chọn): điền cả 3 khoá trên trang Render
+      - key: PAYOS_CLIENT_ID
+        sync: false
+      - key: PAYOS_API_KEY
+        sync: false
+      - key: PAYOS_CHECKSUM_KEY
+        sync: false
