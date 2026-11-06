@@ -186,9 +186,9 @@ button{font-family:inherit;cursor:pointer}
   }
   body.panel-open.panel-phone #toasts .toast{max-width:min(340px,88vw)}
   /* Compact koi / style rows already scroll horizontally via .styles */
-  #panel[data-key="hoca"] #panelBody .row{flex-wrap:nowrap}
-  #panel[data-key="hoca"] #panelBody .btn.gold.big{position:static;box-shadow:0 4px 0 #4d0d08,0 8px 18px rgba(0,0,0,.35)}
-  #panel[data-key="hoca"] #panelBody .center:has(.btn.gold){position:static;background:none;padding-top:0}
+  #panel[data-key="hoca"] #panelBody .row,#panel[data-key="chuong"] #panelBody .row{flex-wrap:nowrap}
+  #panel[data-key="hoca"] #panelBody .btn.gold.big,#panel[data-key="chuong"] #panelBody .btn.gold.big{position:static;box-shadow:0 4px 0 #4d0d08,0 8px 18px rgba(0,0,0,.35)}
+  #panel[data-key="hoca"] #panelBody .center:has(.btn.gold),#panel[data-key="chuong"] #panelBody .center:has(.btn.gold){position:static;background:none;padding-top:0}
   #panel header{padding:8px 10px 8px 14px;flex-shrink:0}
   #panel h2{font-size:22px}
   #panelBody{padding:8px 12px 10px;overflow-wrap:anywhere;overscroll-behavior:contain;min-height:0;-webkit-overflow-scrolling:touch}
@@ -254,7 +254,7 @@ button{font-family:inherit;cursor:pointer}
     <div class="pill" id="merit" title="Công đức hôm nay">🪷 <span id="meritN">0</span></div></div>
   </div>
   <div id="hudR">
-    <a class="ibtn soc" id="hYt" hidden target="_blank" rel="noopener" aria-label="Kênh YouTube của chùa">▶️ <small>YouTube</small></a><a class="ibtn soc" id="hFb" hidden target="_blank" rel="noopener" aria-label="Fanpage Facebook của chùa">📘 <small>Fanpage</small></a>
+    <a class="ibtn soc" id="hYt" hidden target="_blank" rel="noopener" aria-label="Kênh YouTube của chùa">▶️ <small>YouTube</small></a>
     <button class="ibtn" id="bPlaces" aria-label="Đi đến nơi khác">🧭 <small>Đi đến</small></button>
     <button class="ibtn" id="bChat" aria-label="Trò chuyện">💬 <small>Trò chuyện</small></button>
     <button class="ibtn" id="bSound" aria-label="Âm thanh">🔊</button>
@@ -310,7 +310,6 @@ button{font-family:inherit;cursor:pointer}
     <div id="colors"></div><div id="colorName"></div>
     <div id="startBtns">
       <button class="btn big" id="bEnter">🙏 Vào chùa</button>
-      <button class="btn ghost" id="bQuick">Vào nhanh (không cần tài khoản)</button>
     </div>
     <div id="startWarm" hidden>
       <div class="muted" id="startWarmT">Đang chuẩn bị vào chùa…</div>
@@ -327,7 +326,7 @@ button{font-family:inherit;cursor:pointer}
 <script>
 /* Tải nhanh: chạy qua máy chủ → ảnh/mô hình là file riêng (trình duyệt lưu cache, tải theo khu).
    Mở trực tiếp file:// → nạp bản nhúng textures.js + buddha_glb.js như trước. */
-window.ASSET_V = '29bc9478ed';
+window.ASSET_V = 'cd40b198a1';
 (function () { var file = location.protocol === 'file:'; function s(src, cb) { var e = document.createElement('script'); e.src = src; e.async = false; if (cb) e.onload = e.onerror = cb; document.head.appendChild(e); }
   if (file) { s('textures.js'); s('buddha_glb.js'); s('app.js'); } else if ('noModule' in HTMLScriptElement.prototype) { var m = document.createElement('script'); m.type = 'module'; m.src = 'js/main.js?v=' + window.ASSET_V; document.head.appendChild(m); } else s('app.js?v=' + window.ASSET_V); })();
 </script>
