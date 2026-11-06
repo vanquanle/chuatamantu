@@ -1,0 +1,21 @@
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+server/node_modules/
+
+# Live runtime data (wallets, orders, accounts). The server creates this on startup.
+server/data.json
+
+# Not part of the deployable build
+screens/
+source/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
