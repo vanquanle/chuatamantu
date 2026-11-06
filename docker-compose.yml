@@ -1,0 +1,44 @@
+# Chùa Tâm An — chạy bằng: docker compose up -d --build
+# Mở web tại http://localhost:8080  |  Trang quản trị: http://localhost:8080/admin
+services:
+  chua-tam-an:
+    build: .
+    container_name: chua-tam-an
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      NODE_ENV: "production"
+      # Lưu dữ liệu (ví xu, thư, người chơi...) vào ổ đĩa bên dưới để không mất khi khởi động lại
+      DATA_FILE: /var/data/data.json
+      # Đặt mật khẩu quản trị của riêng bạn (tạo file .env cùng thư mục, xem mẫu bên dưới)
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Hãy đặt ADMIN_PASSWORD trong file .env}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8080}
+      ROOM_MAX: ${ROOM_MAX:-50}
+      # Đăng nhập Google / Facebook (để trống thì nút tự ẩn)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      # Hòm thư gửi về email (tuỳ chọn)
+      CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      # Bật PayOS (tuỳ chọn)
+      PAYOS_CLIENT_ID: ${PAYOS_CLIENT_ID:-}
+      PAYOS_API_KEY: ${PAYOS_API_KEY:-}
+      PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY:-}
+    volumes:
+      - chua-data:/var/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  chua-data:
