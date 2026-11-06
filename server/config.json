@@ -1,0 +1,496 @@
+{
+ "_ghi_chu": "TỆP CẤU HÌNH DUY NHẤT cho xu / công đức / vật phẩm / cầu an / hội viên / tài trợ / mạng xã hội. Mọi giá đều tính bằng XU. Người dùng NẠP XU (chuyển khoản → bạn duyệt ở /admin, hoặc PayOS tự duyệt), rồi dùng xu bỏ hòm công đức, dâng vật phẩm… ngay lập tức, không cần duyệt. Sửa xong khởi động lại máy chủ. Khóa PayOS và mật khẩu quản trị đặt trong biến môi trường (xem README_DEPLOY.md).",
+ "supportNote": "Ủng hộ duy trì Chùa Tâm An online",
+ "disclaimer": "Chùa Tâm An online là không gian tu tập trên mạng, không phải một ngôi chùa có thật. Mọi khoản ủng hộ dùng để duy trì máy chủ và phát triển trang.",
+ "xu": {
+  "_ghi_chu": "rate = số đồng cho 1 xu. packs = các gói nạp sẵn. Có thể nạp số xu tùy ý trong khoảng min..max.",
+  "name": "xu",
+  "icon": "🪙",
+  "rate": 1000,
+  "packs": [
+   20,
+   50,
+   100,
+   200,
+   500
+  ],
+  "min": 10,
+  "max": 50000
+ },
+ "donate": {
+  "amounts": [
+   5,
+   10,
+   20,
+   50,
+   100
+  ],
+  "min": 1,
+  "max": 100000
+ },
+ "items": [
+  {
+   "id": "hoadang",
+   "kind": "lantern",
+   "icon": "🏮",
+   "name": "Hoa đăng đặc biệt",
+   "desc": "Viền vàng, tỏa sáng, có tên người dâng, trôi trên Hồ Hoa Đăng.",
+   "price": 20,
+   "days": 1
+  },
+  {
+   "id": "tram",
+   "kind": "incense",
+   "icon": "🪔",
+   "name": "Trầm hương đặc biệt",
+   "desc": "Bó trầm thếp vàng trên đỉnh hương, khói vàng thơm, có tên người dâng.",
+   "price": 20,
+   "days": 1
+  },
+  {
+   "id": "sen",
+   "kind": "lotus",
+   "icon": "🪷",
+   "name": "Hoa sen vàng",
+   "desc": "Đóa sen vàng lấp lánh nở trên hồ sen trước sân chùa, có tên người dâng.",
+   "price": 30,
+   "days": 3
+  },
+  {
+   "id": "dencauan",
+   "kind": "lamp",
+   "icon": "🏮",
+   "name": "Đèn cầu an",
+   "desc": "Đèn lồng đỏ viền vàng thắp sáng trước chánh điện, ghi tên gia đình.",
+   "price": 50,
+   "days": 7
+  },
+  {
+   "id": "thaydo",
+   "kind": "thaydo",
+   "icon": "🖌️",
+   "name": "Giấy nhũ kim – thầy đồ",
+   "desc": "Mở giấy nhũ kim và khung sơn son thếp vàng ở góc thầy đồ.",
+   "price": 10,
+   "days": 1
+  },
+  {
+   "id": "phongsinh",
+   "kind": "release",
+   "icon": "🕊️",
+   "name": "Phóng sinh đặc biệt",
+   "desc": "Mở cá chép vàng và chim hạc ở bục phóng sinh hồ Hoa Đăng.",
+   "price": 10,
+   "days": 1
+  },
+  {
+   "id": "xinxam",
+   "kind": "xinxam",
+   "icon": "🎋",
+   "name": "Xin thêm quẻ xăm",
+   "desc": "Xin thêm một quẻ xăm ở chỗ thầy phong thủy (mỗi ngày được 1 quẻ miễn phí).",
+   "price": 3,
+   "days": 1
+  },
+  {
+   "id": "tuvi",
+   "kind": "tuvi",
+   "icon": "🔮",
+   "name": "Xem tử vi chi tiết",
+   "desc": "Vận năm, công việc, tình duyên, sức khỏe theo năm sinh (tham khảo, giải trí). Dùng trong 1 ngày.",
+   "price": 5,
+   "days": 1
+  },
+  {
+   "id": "khoa",
+   "kind": "khoa",
+   "icon": "💛",
+   "name": "Khóa tình yêu đặc biệt",
+   "desc": "Mở khóa vàng trái tim và khóa ngọc bích ở Cầu tình duyên (dùng trong 1 ngày).",
+   "price": 8,
+   "days": 1
+  },
+  {
+   "id": "xamtd",
+   "kind": "xamtd",
+   "icon": "💞",
+   "name": "Xăm tình duyên chi tiết",
+   "desc": "Xem lời giải chi tiết và xin thêm quẻ tình duyên trong ngày (tham khảo, giải trí).",
+   "price": 5,
+   "days": 1
+  },
+  {
+   "id": "giatien",
+   "kind": "giatien",
+   "icon": "🕯️",
+   "name": "Bàn thờ gia tiên trang nghiêm",
+   "desc": "Mở khung ảnh thếp vàng, đèn sen vàng và mâm ngũ quả cho bàn thờ gia tiên (30 ngày).",
+   "price": 20,
+   "days": 30
+  },
+  {
+   "id": "kinhdich",
+   "kind": "kinhdich",
+   "icon": "🪙",
+   "name": "Gieo quẻ Kinh Dịch",
+   "desc": "Xem lời giải đầy đủ và quẻ biến (tham khảo).",
+   "price": 4,
+   "days": 1
+  },
+  {
+   "id": "amtra",
+   "kind": "amtra",
+   "icon": "🫖",
+   "name": "Trà cao cấp Am trà",
+   "desc": "Mở Trà trầm & Phổ Nhĩ trong Am trà thiền 1 ngày.",
+   "price": 6,
+   "days": 1
+  }
+ ],
+ "prayerBoard": {
+  "options": [
+   {
+    "days": 7,
+    "price": 30
+   },
+   {
+    "days": 30,
+    "price": 100
+   }
+  ],
+  "maxNames": 6
+ },
+ "membership": {
+  "price": 49,
+  "days": 30,
+  "name": "Hội viên Tâm An",
+  "perks": [
+   "Phòng thiền riêng yên tĩnh",
+   "Huy hiệu hoa sen cạnh tên",
+   "Không hiển thị ô nhà tài trợ"
+  ]
+ },
+ "referral": {
+  "_ghi_chu": "Giới thiệu bạn bè. reward = số xu thưởng cho người giới thiệu. trigger: 'first_topup' (mặc định – thưởng khi tài khoản MỚI được mời có lần nạp xu đầu tiên được duyệt) hoặc 'join' (thưởng ngay khi người mới vào bằng link, chống trùng theo thiết bị + IP). Biến môi trường REFERRAL_REWARD / REFERRAL_TRIGGER (nếu đặt) sẽ ghi đè.",
+  "reward": 20,
+  "trigger": "first_topup",
+  "newAccountDays": 3
+ },
+ "sponsors": {
+  "bepchay": [],
+  "thuvien": [],
+  "_vi_du": {
+   "name": "TÊN NHÀ TÀI TRỢ",
+   "text": "Một dòng giới thiệu ngắn",
+   "url": "https://...",
+   "logo": "assets/sponsors/ten-file.webp"
+  }
+ },
+ "social": {
+  "youtube": "",
+  "facebook": "https://www.facebook.com/Tamantu.oficiall"
+ },
+ "vietqr": {
+  "_ghi_chu": "Dùng cho NẠP XU ở chế độ mặc định (duyệt tay). Mã QR chính là VietQR động (img.vietqr.io) có sẵn số tiền + nội dung CK là mã đơn CTA…; ngoài ra có các tab mã QR tĩnh (ảnh trong assets/pay/) làm dự phòng — người nạp tự nhập số tiền và gõ mã đơn vào lời nhắn. Bạn đối chiếu sao kê rồi bấm Xác nhận ở /admin. bankId: BIN hoặc mã VietQR của ngân hàng; accountName KHÔNG dấu, IN HOA. Khi bật PayOS thì QR do PayOS cấp và tự xác nhận.",
+  "bankId": "970418",
+  "bankName": "BIDV",
+  "accountNo": "5650283473",
+  "accountName": "LE VAN QUAN",
+  "template": "compact2",
+  "staticQr": [
+   {
+    "id": "bidv",
+    "label": "BIDV (mã tĩnh)",
+    "img": "assets/pay/bidv.png",
+    "app": "ứng dụng ngân hàng"
+   },
+   {
+    "id": "momo",
+    "label": "MoMo",
+    "img": "assets/pay/momo.png",
+    "app": "MoMo"
+   }
+  ]
+ },
+ "orderMinutes": 30,
+ "offerings": {
+  "_ghi_chu": "Thời gian cháy/trôi và giới hạn số lễ vật mỗi nơi (máy chủ tự áp dụng). Khi đầy, lễ vật mới thay cái cũ nhất — người dâng luôn dâng được. Vật phẩm loại đặc biệt không bị thay bởi lễ vật thường, có giới hạn riêng và sống lâu hơn.",
+  "incense": {
+   "lifeMin": 20,
+   "capSticks": 30
+  },
+  "candle": {
+   "lifeMin": 60,
+   "cap": 72
+  },
+  "lotusLamp": {
+   "lifeMin": 60,
+   "cap": 30
+  },
+  "lantern": {
+   "lifeMin": 45,
+   "cap": 40
+  },
+  "premiumCap": {
+   "lantern": 12,
+   "incense": 9,
+   "lotus": 8,
+   "lamp": 8
+  }
+ },
+ "shop": [
+  {
+   "id": "ao_nau",
+   "kind": "ao",
+   "icon": "🟤",
+   "name": "Áo tràng nâu sồng",
+   "desc": "Màu nâu sồng mộc mạc, giản dị như áo người tu.",
+   "price": 30,
+   "val": "#6b4a2e"
+  },
+  {
+   "id": "ao_lam",
+   "kind": "ao",
+   "icon": "🔵",
+   "name": "Áo tràng lam",
+   "desc": "Màu lam hiền hòa của Phật tử đi chùa.",
+   "price": 30,
+   "val": "#3a5f8f"
+  },
+  {
+   "id": "ao_trang",
+   "kind": "ao",
+   "icon": "⚪",
+   "name": "Áo tràng trắng",
+   "desc": "Trắng tinh khôi, thanh tịnh.",
+   "price": 30,
+   "val": "#efeae0"
+  },
+  {
+   "id": "ao_vang",
+   "kind": "ao",
+   "icon": "🟡",
+   "name": "Áo tràng vàng nghệ",
+   "desc": "Màu vàng nghệ ấm áp, trang nghiêm.",
+   "price": 40,
+   "val": "#d9a21b"
+  },
+  {
+   "id": "ao_tim",
+   "kind": "ao",
+   "icon": "🟣",
+   "name": "Áo tràng tím hoa cà",
+   "desc": "Tím nhạt dịu dàng như hoa cà.",
+   "price": 40,
+   "val": "#8a6aa8"
+  },
+  {
+   "id": "ao_ngoc",
+   "kind": "ao",
+   "icon": "🟢",
+   "name": "Áo tràng xanh ngọc",
+   "desc": "Xanh ngọc mát mắt như mặt hồ sen.",
+   "price": 40,
+   "val": "#3f8f7f"
+  },
+  {
+   "id": "non_la",
+   "kind": "non",
+   "icon": "👒",
+   "name": "Nón lá",
+   "desc": "Nón lá Việt Nam, đội lên đầu nhân vật.",
+   "price": 25,
+   "val": "#e8d39a"
+  },
+  {
+   "id": "khan_dong",
+   "kind": "non",
+   "icon": "🎩",
+   "name": "Khăn đóng",
+   "desc": "Khăn đóng truyền thống màu đen, đi cùng áo dài.",
+   "price": 35,
+   "val": "#1d1a22"
+  },
+  {
+   "id": "chuoi_bode",
+   "kind": "chuoi",
+   "icon": "📿",
+   "name": "Chuỗi hạt bồ đề",
+   "desc": "Chuỗi 108 hạt bồ đề nâu, đeo trên cổ nhân vật.",
+   "price": 20,
+   "val": "#8a5a32"
+  },
+  {
+   "id": "chuoi_ngoc",
+   "kind": "chuoi",
+   "icon": "💚",
+   "name": "Chuỗi hạt ngọc bích",
+   "desc": "Chuỗi hạt xanh ngọc bích trong trẻo.",
+   "price": 35,
+   "val": "#3fae7a"
+  },
+  {
+   "id": "chuoi_tram",
+   "kind": "chuoi",
+   "icon": "🟫",
+   "name": "Chuỗi trầm hương",
+   "desc": "Chuỗi trầm hương sẫm màu, có hạt vàng điểm xuyết.",
+   "price": 50,
+   "val": "#3a2414"
+  },
+  {
+   "id": "toc_bui",
+   "kind": "toc",
+   "name": "Tóc búi đen",
+   "val": "#1d1612",
+   "price": 20,
+   "icon": "💇",
+   "desc": "Trang phục nhân vật – mọi người trong chùa đều thấy."
+  },
+  {
+   "id": "toc_nau",
+   "kind": "toc",
+   "name": "Tóc ngắn nâu",
+   "val": "#5a3a22",
+   "price": 20,
+   "icon": "💇",
+   "desc": "Trang phục nhân vật – mọi người trong chùa đều thấy."
+  },
+  {
+   "id": "giay_vai",
+   "kind": "giay",
+   "name": "Giày vải nâu",
+   "val": "#7a4a2a",
+   "price": 15,
+   "icon": "👞",
+   "desc": "Trang phục nhân vật – mọi người trong chùa đều thấy."
+  },
+  {
+   "id": "giay_do",
+   "kind": "giay",
+   "name": "Hài đỏ thêu",
+   "val": "#a8281c",
+   "price": 25,
+   "icon": "👞",
+   "desc": "Trang phục nhân vật – mọi người trong chùa đều thấy."
+  },
+  {
+   "id": "tay_vong",
+   "kind": "tay",
+   "name": "Vòng tay gỗ trầm",
+   "val": "#5a3418",
+   "price": 20,
+   "icon": "📿",
+   "desc": "Trang phục nhân vật – mọi người trong chùa đều thấy."
+  },
+  {
+   "id": "tay_quat",
+   "kind": "tay",
+   "name": "Quạt giấy vàng",
+   "val": "#e8c060",
+   "price": 25,
+   "icon": "🪭",
+   "desc": "Trang phục nhân vật – mọi người trong chùa đều thấy."
+  },
+  {
+   "id": "tay_sen",
+   "kind": "tay",
+   "name": "Đóa sen hồng cầm tay",
+   "val": "#f2a0b8",
+   "price": 30,
+   "icon": "🪷",
+   "desc": "Trang phục nhân vật – mọi người trong chùa đều thấy."
+  },
+  {
+   "id": "khung_son",
+   "kind": "khung",
+   "icon": "🖼️",
+   "name": "Khung thư pháp sơn son thếp vàng",
+   "desc": "Mở vĩnh viễn giấy nhũ kim và khung sơn son ở góc thầy đồ.",
+   "price": 60
+  },
+  {
+   "id": "nen_phat",
+   "kind": "nen",
+   "icon": "🧘",
+   "name": "Hình nền: Đức Phật thiền định",
+   "desc": "Ảnh HD 1920×1080 tự tạo, dùng làm hình nền máy tính, điện thoại.",
+   "price": 15,
+   "file": "nen_phat.jpg"
+  },
+  {
+   "id": "nen_sen",
+   "kind": "nen",
+   "icon": "🪷",
+   "name": "Hình nền: Hồ sen bình minh",
+   "desc": "Ảnh HD hồ sen lúc bình minh, tự tạo.",
+   "price": 15,
+   "file": "nen_sen.jpg"
+  },
+  {
+   "id": "nen_chua",
+   "kind": "nen",
+   "icon": "⛩️",
+   "name": "Hình nền: Cổng chùa hoàng hôn",
+   "desc": "Ảnh HD cổng chùa trong nắng chiều, tự tạo.",
+   "price": 15,
+   "file": "nen_chua.jpg"
+  },
+  {
+   "id": "nhac_chuongmo",
+   "kind": "nhac",
+   "icon": "🔔",
+   "name": "Nhạc chuông mõ niệm Phật",
+   "desc": "Nhịp mõ đều và chuông gia trì (3 phút, MP3) để niệm Phật tại nhà. Âm thanh tự tổng hợp.",
+   "price": 20,
+   "file": "chuong_mo.mp3"
+  },
+  {
+   "id": "nhac_thien",
+   "kind": "nhac",
+   "icon": "🎐",
+   "name": "Chuông thiền định",
+   "desc": "Tiếng chuông ngân chậm cho buổi ngồi thiền (5 phút, MP3). Âm thanh tự tổng hợp.",
+   "price": 20,
+   "file": "chuong_thien.mp3"
+  },
+  {
+   "id": "nhang_vang",
+   "kind": "nhang",
+   "icon": "🪔",
+   "name": "Nhang trầm vàng",
+   "desc": "Nén hương bạn thắp có thân vàng kim và khói vàng nhạt – mọi người cùng thấy.",
+   "price": 25
+  },
+  {
+   "id": "den_senvang",
+   "kind": "den",
+   "icon": "🏮",
+   "name": "Hoa đăng sen vàng kim",
+   "desc": "Hoa đăng bạn thả có cánh sen vàng kim tỏa sáng – mọi người cùng thấy.",
+   "price": 25
+  },
+  {
+   "id": "tuong_phat",
+   "kind": "real",
+   "icon": "🗿",
+   "name": "Tượng Phật để bàn (hàng thật)",
+   "desc": "Sắp có – hàng thật gửi tận nhà. Hiện chưa mở bán.",
+   "price": 0,
+   "real": true
+  }
+ ],
+ "_ghi_chu_shop": "shop: cửa hàng lưu niệm. Vật phẩm ảo mua bằng xu, lưu theo ví (DB.inv). kind: ao/non/chuoi (mặc lên nhân vật, val = màu), khung (thầy đồ), nen/nhac (file trong server/shopfiles, tải qua /api/dl), nhang/den (skin). 'real': true = móc cho hàng thật sau này (chưa bán: cần thêm địa chỉ giao hàng + đơn vận chuyển).",
+ "contactEmail": "",
+ "_ghi_chu_contactEmail": "Địa chỉ email nhận thư từ Hòm thư (để trống = chỉ lưu trong /admin → Hòm thư). Có thể đặt bằng biến môi trường CONTACT_EMAIL. Gửi qua Gmail cần SMTP_USER + SMTP_PASS (App Password).",
+ "roomMax": 50,
+ "_ghi_chu_roomMax": "Số người tối đa mỗi phòng (khi đầy tự mở phòng mới). Có thể ghi đè bằng biến môi trường ROOM_MAX.",
+ "checkin": {
+  "enabled": true,
+  "xu": 1,
+  "streakDays": 7,
+  "streakBonusXu": 5,
+  "streakBonusItem": "tram",
+  "note": "Điểm danh khi thắp hương lần đầu trong ngày (UTC+7). Chuỗi 7 ngày: thêm xu + món cao cấp 1 ngày."
+ }
+}
