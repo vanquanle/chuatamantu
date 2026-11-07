@@ -164,6 +164,7 @@ wss.on('connection', (ws, req) => {
     bcast(R, { t: 'join', p: pub(P) }, ws);
   }
   function leave(){ if (!R || !P) return; R.players.delete(P.id); online--; bcast(R, { t: 'leave', id: P.id }); if (R.priv && !R.players.size) { rooms.delete(R.id); delete DB.lanterns[R.id]; delete DB.mo[R.id]; } R = null; }
+  function cd(action) { if (!P || !P.wallet || !PAY.deed) return; try { const r = PAY.deed(P.wallet, action); if (r && (r.added || r.msg)) send(ws, r); } catch (e) {} }
   ws.on('message', buf => {
     if (!lim.msg()) return;
     let m; try { m = JSON.parse(buf); } catch (e) { return; }
@@ -186,16 +187,16 @@ wss.on('connection', (ws, req) => {
         bcast(R, { t: 'chat', id: P.id, name: P.name, text: txt }); break; }
       case 'bell': { const t = Date.now(); if (t - (P.bellT || 0) < 6000) return send(ws, { t: 'notice', msg: 'Xin đợi tiếng chuông ngân dứt rồi hãy thỉnh tiếp 🙏' }); bellWin = bellWin.filter(x => t - x < 60000); if (bellWin.length >= 20) return send(ws, { t: 'notice', msg: 'Chuông đang ngân, xin đợi giây lát 🙏' });
         P.bellT = t; bellWin.push(t); DB.bells = (DB.bells || 0) + 1; dirty = true; bodeAdd(P.wallet || P.id); const msg = clean(m.msg, 60);
-        bcastAll({ t: 'bell', id: P.id, name: P.name, msg, n: DB.bells }); break; }
+        bcastAll({ t: 'bell', id: P.id, name: P.name, msg, n: DB.bells }); cd('bell'); break; }
       case 'act': { const a = String(m.a || '').slice(0, 12); if (!/^[a-z]+$/.test(a)) return; if (a === 'huong' || a === 'thaphuong') bodeAdd(P.wallet || P.id);
         const offer = a === 'huong' || a === 'thaphuong';
         if (offer) { // nén hương luôn được ghi nhận (không chặn người dâng), giới hạn số que mỗi lư hương theo FIFO
           const loc = a === 'huong' && P.s && P.s[2] < -11 ? 'bowl' : 'urn'; const n = Math.max(1, Math.min(9, num(m.v, 1, 9)|0 || 3));
           const I = DB.incense[R.id] = DB.incense[R.id] || {}; const sk = P.g && P.g.nhang ? 1 : 0; I[loc] = capIncense([...(I[loc] || []), Object.assign({ id: nid(), t: Date.now(), n }, sk ? { k: 1 } : {})]); dirty = true;
-          if (!lim.act()) return; bcast(R, Object.assign({ t: 'act', id: P.id, a, v: n, loc }, sk ? { k: 1 } : {}), ws); break; }
-        if (!lim.act()) return; bcast(R, { t: 'act', id: P.id, a, v: num(m.v, 0, 9)|0 }, ws); break; }
+          if (!lim.act()) return; bcast(R, Object.assign({ t: 'act', id: P.id, a, v: n, loc }, sk ? { k: 1 } : {}), ws); cd(a === 'thaphuong' ? 'huong' : a); break; }
+        if (!lim.act()) return; bcast(R, { t: 'act', id: P.id, a, v: num(m.v, 0, 9)|0 }, ws); if (['lay', 'huong', 'hoa', 'khanh', 'mo', 'chaptay'].includes(a)) cd(a); break; }
       case 'mo': { const n = num(m.n, 0, 40) | 0; if (!n) return; DB.mo[R.id] = (DB.mo[R.id] || 0) + n; DB.moGlobal += n; R.moDirty = true; dirty = true; break; }
-      case 'feed': { if (!lim.feed()) return; bcast(R, { t: 'feed', id: P.id, x: num(m.x,-80,80), z: num(m.z,-80,80) }, ws); break; }
+      case 'feed': { if (!lim.feed()) return; bcast(R, { t: 'feed', id: P.id, x: num(m.x,-80,80), z: num(m.z,-80,80) }, ws); cd('feed'); break; }
       case 'lantern': case 'prayer': case 'candle': case 'fish': {
         const isOffer = m.t === 'lantern' || m.t === 'candle';
         const okRate = isOffer ? lim.offer() : lim.post();
@@ -206,10 +207,10 @@ wss.on('connection', (ws, req) => {
           return send(ws, { t: m.t, item: own }); }
         const text = clean(m.text, m.t === 'prayer' ? 160 : 80);
         const item = { id: nid(), name: P.name, text, t: Date.now() };
-        if (m.t === 'lantern') { item.c = num(m.c, 0, 5)|0; if (P.g && P.g.den) item.k = 1; item.x = num(m.x,-80,80); item.z = num(m.z,-120,80); if (m.l) { item.l = 1; item.s = num(m.s, 0, 5)|0; } DB.lanterns[R.id] = capLanterns([...(DB.lanterns[R.id] || []), item]); bcast(R, { t: 'lantern', item }); }
-        else if (m.t === 'fish') { item.k = num(m.k, 0, 7)|0; DB.fishes.push(item); bcastAll({ t: 'fish', item }); }
-        else if (m.t === 'candle') { item.text = text || 'Nguyện bình an'; item.c = num(m.c, 0, 3)|0; DB.candles.push(item); DB.candles = DB.candles.slice(-OFFER.candle.cap); bcastAll({ t: 'candle', item }); }
-        else { if (!text) return; item.likes = 0; bodeAdd(P.wallet || P.id); DB.prayers.push(item); bcastAll({ t: 'prayer', item }); }
+        if (m.t === 'lantern') { item.c = num(m.c, 0, 5)|0; if (P.g && P.g.den) item.k = 1; item.x = num(m.x,-80,80); item.z = num(m.z,-120,80); if (m.l) { item.l = 1; item.s = num(m.s, 0, 5)|0; } DB.lanterns[R.id] = capLanterns([...(DB.lanterns[R.id] || []), item]); bcast(R, { t: 'lantern', item }); cd('lantern'); }
+        else if (m.t === 'fish') { item.k = num(m.k, 0, 7)|0; DB.fishes.push(item); bcastAll({ t: 'fish', item }); cd('fish'); }
+        else if (m.t === 'candle') { item.text = text || 'Nguyện bình an'; item.c = num(m.c, 0, 3)|0; DB.candles.push(item); DB.candles = DB.candles.slice(-OFFER.candle.cap); bcastAll({ t: 'candle', item }); cd('candle'); }
+        else { if (!text) return; item.likes = 0; bodeAdd(P.wallet || P.id); DB.prayers.push(item); bcastAll({ t: 'prayer', item }); cd('prayer'); }
         dirty = true; prune(); break; }
       case 'scroll': { // thầy đồ: treo chữ lên vách (giới hạn chữ kiểm tra lại ở máy chủ, giữ 8 bức mới nhất mỗi phòng)
         const W = x => String(x || '').trim().split(/\s+/).filter(Boolean).length, k = String(m.k || '');
@@ -271,7 +272,8 @@ wss.on('connection', (ws, req) => {
         if (a === 'sit' || a === 'pour') { P.teaTable = table || P.teaTable; bcast(R, { t: 'tea', a, table, id: P.id, name: P.name, tea: m.tea }, ws); break; }
         break;
       }
-      case 'chant': { DB.chantTotal++; dirty = true; break; }
+      case 'chant': { DB.chantTotal++; dirty = true; cd('kinh'); break; }
+      case 'merit': { if (!P || !PAY.onMerit) return; try { const r = PAY.onMerit(P, m); if (r) send(ws, r); } catch (e) { send(ws, { t: 'congduc', error: 'Không ghi được công đức' }); } break; }
       case 'member': { if (/^TA[A-Z0-9]{10}$/.test(String(m.code || ''))) P.wallet = m.code; if (PAY.isMember(m.code)) { P.member = m.code; P.b = 1; bcast(R, { t: 'meta', id: P.id, name: P.name, color: P.color, b: 1 }); } break; }
       case 'private': { // phòng thiền riêng cho hội viên
         if (!P.b || !PAY.isMember(P.member)) return send(ws, { t: 'notice', msg: 'Phòng thiền riêng dành cho hội viên 🪷' });

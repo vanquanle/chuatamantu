@@ -1,5 +1,5 @@
 {
- "_ghi_chu": "TỆP CẤU HÌNH DUY NHẤT cho xu / công đức / vật phẩm / cầu an / hội viên / tài trợ / mạng xã hội. Mọi giá đều tính bằng XU. Người dùng NẠP XU (chuyển khoản → bạn duyệt ở /admin, hoặc PayOS tự duyệt), rồi dùng xu bỏ hòm công đức, dâng vật phẩm… ngay lập tức, không cần duyệt. Sửa xong khởi động lại máy chủ. Khóa PayOS và mật khẩu quản trị đặt trong biến môi trường (xem README_DEPLOY.md).",
+ "_ghi_chu": "TỆP CẤU HÌNH cho xu / công đức / vật phẩm / cầu an / hội viên. Người chơi KHÔNG nạp xu bằng tiền. Làm việc lành để có công đức, đổi 10 công đức = 1 xu, rồi tiêu xu. Trần 40 công đức/ngày (giờ VN). Đổi thưởng 1000 xu = 100000đ nằm ở mục Thêm. Sửa xong khởi động lại máy chủ.",
  "supportNote": "Ủng hộ duy trì Chùa Tâm An online",
  "disclaimer": "Chùa Tâm An online là không gian tu tập trên mạng, không phải một ngôi chùa có thật. Mọi khoản ủng hộ dùng để duy trì máy chủ và phát triển trang.",
  "xu": {
@@ -171,9 +171,10 @@
   ]
  },
  "referral": {
-  "_ghi_chu": "Giới thiệu bạn bè. reward = số xu thưởng cho người giới thiệu. trigger: 'first_topup' (mặc định – thưởng khi tài khoản MỚI được mời có lần nạp xu đầu tiên được duyệt) hoặc 'join' (thưởng ngay khi người mới vào bằng link, chống trùng theo thiết bị + IP). Biến môi trường REFERRAL_REWARD / REFERRAL_TRIGGER (nếu đặt) sẽ ghi đè.",
-  "reward": 20,
-  "trigger": "first_topup",
+  "_ghi_chu": "trigger: 'first_deed' — thưởng khi tài khoản mới được cộng công đức lần đầu (không cần nạp tiền). rewardXu phải là 0 để không có khoản xu lớn một lần (không rút ngắn mốc 1.000 xu). rewardCd cộng công đức cho người giới thiệu, nằm trong trần ngày.",
+  "reward": 0,
+  "rewardCd": 4,
+  "trigger": "first_deed",
   "newAccountDays": 3
  },
  "sponsors": {
@@ -481,16 +482,122 @@
   }
  ],
  "_ghi_chu_shop": "shop: cửa hàng lưu niệm. Vật phẩm ảo mua bằng xu, lưu theo ví (DB.inv). kind: ao/non/chuoi (mặc lên nhân vật, val = màu), khung (thầy đồ), nen/nhac (file trong server/shopfiles, tải qua /api/dl), nhang/den (skin). 'real': true = móc cho hàng thật sau này (chưa bán: cần thêm địa chỉ giao hàng + đơn vận chuyển).",
- "contactEmail": "",
+ "contactEmail": "thandenn123@gmail.com",
  "_ghi_chu_contactEmail": "Địa chỉ email nhận thư từ Hòm thư (để trống = chỉ lưu trong /admin → Hòm thư). Có thể đặt bằng biến môi trường CONTACT_EMAIL. Gửi qua Gmail cần SMTP_USER + SMTP_PASS (App Password).",
  "roomMax": 50,
  "_ghi_chu_roomMax": "Số người tối đa mỗi phòng (khi đầy tự mở phòng mới). Có thể ghi đè bằng biến môi trường ROOM_MAX.",
  "checkin": {
   "enabled": true,
-  "xu": 1,
+  "xu": 0,
+  "cd": 2,
   "streakDays": 7,
-  "streakBonusXu": 5,
-  "streakBonusItem": "tram",
-  "note": "Điểm danh khi thắp hương lần đầu trong ngày (UTC+7). Chuỗi 7 ngày: thêm xu + món cao cấp 1 ngày."
+  "streakBonusXu": 0,
+  "streakBonusCd": 0,
+  "streakBonusItem": "",
+  "note": "Điểm danh cộng công đức (nằm trong trần 40 công đức/ngày), không cộng xu."
+ },
+ "congduc": {
+  "_ghi_chu": "10 công đức = 1 xu. Trần cứng 40 công đức/ngày (Asia/Ho_Chi_Minh). Ngày đầy đủ khoảng 30–40, không vượt 40. Ngồi thiền theo phút thật (máy chủ bấm giờ). Việc khác có trần từng việc.",
+  "perXu": 10,
+  "dailyCap": 40,
+  "streakBonus": 2,
+  "meditate": {
+   "perMinute": 1,
+   "maxMinutes": 14,
+   "maxGapSec": 45,
+   "minGapSec": 8,
+   "firstMinutes": 2,
+   "firstBonus": 1
+  },
+  "sweep": {
+   "perMinute": 1,
+   "maxMinutes": 4,
+   "maxGapSec": 40,
+   "minGapSec": 8,
+   "firstMinutes": 0,
+   "firstBonus": 0
+  },
+  "deeds": {
+   "lay": {
+    "cd": 1,
+    "daily": 2,
+    "label": "Lễ Phật"
+   },
+   "huong": {
+    "cd": 2,
+    "daily": 2,
+    "label": "Thắp hương"
+   },
+   "hoa": {
+    "cd": 1,
+    "daily": 1,
+    "label": "Dâng hoa"
+   },
+   "bell": {
+    "cd": 1,
+    "daily": 1,
+    "label": "Thỉnh chuông"
+   },
+   "khanh": {
+    "cd": 1,
+    "daily": 1,
+    "label": "Chuông gia trì"
+   },
+   "mo": {
+    "cd": 1,
+    "daily": 1,
+    "label": "Gõ mõ"
+   },
+   "feed": {
+    "cd": 1,
+    "daily": 1,
+    "label": "Cho cá ăn"
+   },
+   "fish": {
+    "cd": 1,
+    "daily": 1,
+    "label": "Thả cá"
+   },
+   "lantern": {
+    "cd": 2,
+    "daily": 2,
+    "label": "Thả hoa đăng"
+   },
+   "candle": {
+    "cd": 1,
+    "daily": 1,
+    "label": "Thắp nến"
+   },
+   "prayer": {
+    "cd": 1,
+    "daily": 1,
+    "label": "Cầu nguyện"
+   },
+   "hat": {
+    "cd": 1,
+    "daily": 1,
+    "label": "Tràng hạt"
+   },
+   "kinh": {
+    "cd": 1,
+    "daily": 1,
+    "label": "Tụng kinh"
+   },
+   "chaptay": {
+    "cd": 0,
+    "daily": 0,
+    "label": "Chắp tay"
+   },
+   "checkin": {
+    "cd": 2,
+    "daily": 2,
+    "label": "Điểm danh"
+   }
+  }
+ },
+ "reward": {
+  "_ghi_chu": "Đổi thưởng trong mục Thêm. Trừ xu khi gửi. Chủ chùa tự chuyển khoản. Email nhận là contactEmail.",
+  "xu": 1000,
+  "vnd": 100000
  }
 }

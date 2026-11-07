@@ -1,12 +1,7 @@
-/* Xu · công đức · vật phẩm đặc biệt · bảng cầu an/cầu siêu · hội viên
- * Mọi thứ trong chùa tính bằng XU. Chỉ việc NẠP XU cần xác nhận; tiêu xu (bỏ hòm công đức, dâng vật phẩm, ghi bảng cầu an,
- *   đăng ký hội viên) được trừ ngay và có hiệu lực tức thì.
- * Nạp xu mặc định: DUYỆT TAY — người dùng chuyển khoản qua mã VietQR tĩnh (config.json) kèm mã đơn trong nội dung,
- *   đơn ở trạng thái "chờ"; chủ trang vào /admin (mật khẩu ADMIN_PASSWORD) bấm Xác nhận / Từ chối → xu vào ví.
- * Ví gắn với "mã của bạn" (TA + 10 ký tự) do máy người dùng tạo, lưu trên máy, có thể khôi phục bằng cách nhập lại mã.
- * Tùy chọn: nếu đặt đủ PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY → tạo link/QR PayOS và tự xác nhận
- *   qua webhook /api/payos/webhook (kiểm chữ ký HMAC-SHA256), có hỏi lại trạng thái đơn làm dự phòng.
- * Hết hạn (vật phẩm, bảng cầu an, hội viên) luôn tự động. */
+/* Xu · công đức · vật phẩm đặc biệt · bảng cầu an/cầu siêu · hội viên · đổi thưởng
+ * Nạp xu bằng tiền đã tắt. Người chơi làm việc lành để có công đức (trần ngày), đổi 10 công đức = 1 xu,
+ * rồi tiêu xu như cũ. Đổi thưởng (1.000 xu → 100.000đ) tạo yêu cầu chờ chủ chùa, trừ xu lúc gửi.
+ * Không gửi số tài khoản của chùa xuống trình duyệt. */
 'use strict';
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 
@@ -22,21 +17,25 @@ module.exports = function installPay({ bodeAdd, DB, markDirty, bcastAll, clean, 
   const ADMIN_PW = ENV.ADMIN_PASSWORD || '';
   const isPH = v => !v || /^THAY_/.test(String(v));
   const vq = CFG.vietqr || {}; const VQ_READY = !isPH(vq.bankId) && !isPH(vq.accountNo);
-  DB.orders = DB.orders || []; DB.premium = DB.premium || []; DB.pboard = DB.pboard || []; DB.members = DB.members || {}; DB.wallets = DB.wallets || {}; DB.spends = DB.spends || []; DB.checkins = DB.checkins || {}; DB.inv = DB.inv || {}; DB.altars = DB.altars || {}; DB.mail = DB.mail || []; DB.altars = DB.altars || {};
-  console.log(`Công đức: chế độ ${MODE === 'payos' ? 'PayOS (tự xác nhận)' : 'duyệt tay (/admin)'}${VQ_READY || PAYOS ? '' : ' — CHƯA điền tài khoản VietQR trong config.json'}${ADMIN_PW ? '' : ' — CHƯA đặt ADMIN_PASSWORD'}`);
+  DB.orders = DB.orders || []; DB.premium = DB.premium || []; DB.pboard = DB.pboard || []; DB.members = DB.members || {}; DB.wallets = DB.wallets || {}; DB.spends = DB.spends || []; DB.checkins = DB.checkins || {}; DB.inv = DB.inv || {}; DB.altars = DB.altars || {}; DB.mail = DB.mail || []; DB.rewards = DB.rewards || []; DB.altars = DB.altars || {};
+  console.log(`Công đức: nạp xu đã tắt · trần ngày theo config · đổi thưởng chờ duyệt${ADMIN_PW ? '' : ' — CHƯA đặt ADMIN_PASSWORD'}`);
 
   const DAY = 864e5, now = () => Date.now();
   const strip = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
   const fmt = n => (+n || 0).toLocaleString('vi-VN') + 'đ';
   const XU = Object.assign({ name: 'xu', icon: '🪙', rate: 1000, packs: [20, 50, 100, 200], min: 10, max: 50000 }, CFG.xu || {});
   const wallet = c => DB.wallets[c] || (DB.wallets[c] = { bal: 0, topup: 0, spent: 0, created: now() });
-  const RF = Object.assign({ reward: 20, trigger: 'first_topup', newAccountDays: 3 }, CFG.referral || {});
-  if (ENV.REFERRAL_REWARD) RF.reward = Math.max(0, +ENV.REFERRAL_REWARD || 0); if (ENV.REFERRAL_TRIGGER) RF.trigger = ENV.REFERRAL_TRIGGER === 'join' ? 'join' : 'first_topup';
+  const RF = Object.assign({ reward: 0, rewardCd: 4, trigger: 'first_deed', newAccountDays: 3 }, CFG.referral || {});
+  RF.reward = 0; // không thưởng xu một cục — nếu không, mốc 1.000 xu có thể tới trước 7 tháng
+  RF.rewardCd = Math.max(0, Math.min(40, +RF.rewardCd || 0));
+  if (ENV.REFERRAL_TRIGGER) RF.trigger = ENV.REFERRAL_TRIGGER === 'join' ? 'join' : 'first_deed';
+  if (RF.trigger === 'first_topup') RF.trigger = 'first_deed';
   DB.refJoinKeys = DB.refJoinKeys || {}; DB.refLog = DB.refLog || [];
-  function payReferral(w, code, why) { // trả thưởng cho người giới thiệu đúng một lần cho mỗi tài khoản được mời
-    if (!w.ref || w.refPaid || !RF.reward) return; const r = wallet(w.ref); w.refPaid = now(); r.bal += RF.reward; r.refEarned = (r.refEarned || 0) + RF.reward;
-    DB.refLog.push({ t: now(), ref: w.ref, invited: code, xu: RF.reward, why }); if (DB.refLog.length > 5000) DB.refLog = DB.refLog.slice(-5000);
-    toWallet && toWallet(w.ref, { t: 'wallet', bal: r.bal, add: RF.reward, why: 'ref' }); markDirty(); }
+  function payReferral(w, code, why) { // thưởng người giới thiệu một lần — chỉ công đức, nằm trong trần ngày
+    if (!w.ref || w.refPaid || !RF.rewardCd) return; const r = wallet(w.ref); w.refPaid = now();
+    const g = grant(r, RF.rewardCd, 'referral', w.ref, { silentRef: true });
+    DB.refLog.push({ t: now(), ref: w.ref, invited: code, xu: 0, cd: g.added || 0, why }); if (DB.refLog.length > 5000) DB.refLog = DB.refLog.slice(-5000);
+    toWallet && toWallet(w.ref, Object.assign({ t: 'congduc', why: 'ref' }, g)); markDirty(); }
   const ipOf = req => (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',').pop().trim(); // lấy IP do proxy (Render) ghi sau cùng, khó giả mạo hơn
   function claimRef(b, req) {
     const wc = String(b.wallet || ''), rc = String(b.ref || '').toUpperCase(), dev = String(b.device || '').slice(0, 40), ip = ipOf(req);
@@ -61,38 +60,20 @@ module.exports = function installPay({ bodeAdd, DB, markDirty, bcastAll, clean, 
   function doCheckin(wc, name) {
     const cfg = checkinCfg(); if (!cfg.enabled) throw Object.assign(new Error('Điểm danh đang tắt'), { code: 'off' });
     const day = vnDay(); let c = checkinOf(wc);
-    if (c.last === day) return { already: true, day, streak: c.streak, awarded: 0, cfg, bal: (DB.wallets[wc] || { bal: 0 }).bal };
+    const w0 = DB.wallets[wc] || { bal: 0 };
+    if (c.last === day) return Object.assign({ already: true, day, streak: c.streak, awarded: 0, cd: 0, cfg, bal: w0.bal }, view(wc));
     const prev = prevVnDay(day);
     c.streak = (c.last === prev) ? (c.streak || 0) + 1 : 1;
     c.last = day;
-    const w = DB.wallets[wc] || (DB.wallets[wc] = { bal: 0, spent: 0, created: now() });
-    const awarded = Math.max(0, +cfg.xu || 0);
-    if (awarded) { w.bal += awarded; DB.spends.push({ id: 'ci' + now().toString(36), t: now(), type: 'checkin', xu: awarded, name: name || '', wallet: wc, item: 'checkin', msg: 'Điểm danh ' + day, credit: 1 }); }
-    let bonus = null;
-    if (c.streak > 0 && c.streak % (cfg.streakDays || 7) === 0) {
-      const bx = Math.max(0, +cfg.streakBonusXu || 0);
-      if (bx) { w.bal += bx; DB.spends.push({ id: 'cb' + now().toString(36), t: now(), type: 'checkin', xu: bx, name: name || '', wallet: wc, item: 'checkin_bonus', msg: 'Chuỗi ' + c.streak + ' ngày', credit: 1 }); }
-      const iid = cfg.streakBonusItem; const it = (CFG.items || []).find(i => i.id === iid);
-      if (it) {
-        DB.inv = DB.inv || {}; const inv = DB.inv[wc] || (DB.inv[wc] = {});
-        const until = now() + (it.days || 1) * 864e5;
-        inv[it.id] = Math.max(inv[it.id] || 0, until);
-        bonus = { xu: bx, item: it.id, itemName: it.name, until };
-      } else bonus = { xu: bx };
-      c.bonuses = (c.bonuses || []).concat({ t: now(), streak: c.streak }).slice(-20);
-    }
-    DB.checkins[wc] = c; markDirty();
-    return { ok: true, day, streak: c.streak, awarded, bonus, cfg, bal: w.bal };
+    if (c.streak > 0 && c.streak % (cfg.streakDays || 7) === 0) c.bonuses = (c.bonuses || []).concat({ t: now(), streak: c.streak }).slice(-20);
+    DB.checkins[wc] = c;
+    const g = deed(wc, 'checkin'); // công đức, nằm trong trần ngày — không cộng xu
+    markDirty();
+    return Object.assign({ ok: true, day, streak: c.streak, awarded: 0, cd: g.added || 0, bonus: null, cfg, bal: (DB.wallets[wc] || { bal: 0 }).bal, msg: g.added ? ('Điểm danh · +' + g.added + ' công đức') : (g.msg || 'Điểm danh hôm nay') }, g);
   }
 
-  const pub = o => ({ code: o.code, ref: o.ref, type: o.type, xu: o.xu, wallet: o.wallet, name: o.name, amount: o.amount, item: o.item, days: o.days, status: o.status, created: o.created, paidAt: o.paidAt || 0, expires: o.expires, mode: o.mode,
-    pay: o.status === 'pending' ? payInfo(o) : null });
-  function payInfo(o) {
-    if (o.mode === 'payos' && o.payos) return { kind: 'payos', qrString: o.payos.qrCode, checkoutUrl: o.payos.checkoutUrl, bank: o.payos.bin, accountNo: o.payos.accountNumber, accountName: o.payos.accountName, note: o.payos.description || o.ref, amount: o.amount };
-    if (!VQ_READY) return { kind: 'unset', note: o.ref, amount: o.amount };
-    const url = `https://img.vietqr.io/image/${encodeURIComponent(vq.bankId)}-${encodeURIComponent(vq.accountNo)}-${encodeURIComponent(vq.template || 'compact2')}.png?amount=${o.amount}&addInfo=${encodeURIComponent(o.ref)}&accountName=${encodeURIComponent(vq.accountName || '')}`;
-    return { kind: 'vietqr', qrUrl: url, bank: vq.bankName || vq.bankId, accountNo: vq.accountNo, accountName: vq.accountName, note: o.ref, amount: o.amount, alt: (vq.staticQr || []).filter(q => q && q.img).map(q => ({ id: q.id, label: q.label, img: q.img, app: q.app || '' })) };
-  }
+  const pub = o => ({ code: o.code, ref: o.ref, type: o.type, xu: o.xu, wallet: o.wallet, name: o.name, amount: o.amount, item: o.item, days: o.days, status: (o.type === 'topup' && o.status === 'pending') ? 'cancelled' : o.status, created: o.created, paidAt: o.paidAt || 0, expires: o.expires, mode: o.mode, pay: null });
+  function payInfo() { return null; } /* không đưa thông tin chuyển khoản xuống client */
   const paidWithin = (wc, item, days) => { const t = now() - days * DAY; for (let i = DB.spends.length - 1; i >= 0 && DB.spends[i].t > t; i--) if (DB.spends[i].wallet === wc && DB.spends[i].item === item) return true; return !!(DB.members[wc] && DB.members[wc].until > now()); };
   const altPub = a => a && { sid: a.sid, name: a.name, years: a.years, photo: a.photo, frame: a.frame, den: a.den, qua: a.qua, hoa: a.hoa, offers: (a.offers || []).slice(-20), n: a.n || 0 };
   /* Truyện hay do chủ chùa thêm trong /admin: lưu riêng ở server/stories.json (sửa không cần đổi mã) */
@@ -121,12 +102,17 @@ module.exports = function installPay({ bodeAdd, DB, markDirty, bcastAll, clean, 
   const shopList = () => CFG.shop || [];
   function invOf(wc) { const t = now(); return (DB.inv[wc] || []).filter(x => !x.until || x.until > t); }
   function hasItem(wc, id) { return !!wc && invOf(wc).some(x => x.id === id); }
+  function ownerEmail() { const v = String(process.env.CONTACT_EMAIL || CFG.contactEmail || '').trim(); return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) ? v : ''; }
   function publicConfig() {
-    return { mode: MODE, test: TEST, vietqrReady: VQ_READY, offerings: CFG.offerings || null, referral: { reward: RF.reward, trigger: RF.trigger }, xu: { name: XU.name, icon: XU.icon, rate: XU.rate, packs: XU.packs, min: XU.min, max: XU.max }, supportNote: CFG.supportNote, disclaimer: CFG.disclaimer, donate: CFG.donate, items: items().map(({ id, kind, icon, name, desc, price, days }) => ({ id, kind, icon, name, desc, price, days })), shop: shopList().map(({ file, ...x }) => Object.assign(x, { dl: !!file })),
-      prayerBoard: CFG.prayerBoard, membership: CFG.membership, sponsors: { bepchay: (CFG.sponsors || {}).bepchay || [], thuvien: (CFG.sponsors || {}).thuvien || [] }, social: CFG.social || {}, orderMinutes: CFG.orderMinutes || 30, checkin: checkinCfg(), auth: (() => { try { const p = AUTH.providers(); return { google: !!p.google, facebook: !!p.facebook, oneTap: !!p.oneTap, googleClientId: p.googleClientId || '', mock: !!p.mock }; } catch (e) { return { google: false, facebook: false, oneTap: false }; } })() };
+    const cd = cdCfg();
+    return { mode: 'off', test: false, topup: false, vietqrReady: false, offerings: CFG.offerings || null, referral: { reward: 0, rewardCd: RF.rewardCd, trigger: RF.trigger }, xu: { name: XU.name, icon: XU.icon, rate: XU.rate, packs: [], min: 0, max: 0 }, supportNote: CFG.supportNote, disclaimer: CFG.disclaimer, donate: CFG.donate, items: items().map(({ id, kind, icon, name, desc, price, days }) => ({ id, kind, icon, name, desc, price, days })), shop: shopList().map(({ file, ...x }) => Object.assign(x, { dl: !!file })),
+      prayerBoard: CFG.prayerBoard, membership: CFG.membership, sponsors: { bepchay: (CFG.sponsors || {}).bepchay || [], thuvien: (CFG.sponsors || {}).thuvien || [] }, social: CFG.social || {}, orderMinutes: 0, checkin: Object.assign(checkinCfg(), { xu: 0, streakBonusXu: 0 }), contactEmail: ownerEmail(),
+      congduc: { perXu: cd.perXu, dailyCap: cd.dailyCap, streakBonus: cd.streakBonus, meditate: { perMinute: cd.meditate.perMinute, maxMinutes: cd.meditate.maxMinutes }, sweep: { perMinute: cd.sweep.perMinute, maxMinutes: cd.sweep.maxMinutes } },
+      reward: { xu: rewardCfg().xu, vnd: rewardCfg().vnd },
+      auth: { google: false, facebook: false, oneTap: false, googleClientId: '', mock: false } };
   }
 
-  /* ---------- bảng công đức (cộng dồn theo tên, chỉ tính đơn đã xác nhận, không tính phí hội viên) ---------- */
+  /* ---------- bảng công đức công khai: xếp theo XU đã bỏ hòm / tiêu (DB.spends), không phải điểm công đức làm ra xu ---------- */
   const nameScore = n => (n !== strip(n) ? 2 : 0) + (/[A-ZÀ-Ỹ]/.test(n) ? 1 : 0);
   function board() {
     const m = new Map();
@@ -149,29 +135,10 @@ module.exports = function installPay({ bodeAdd, DB, markDirty, bcastAll, clean, 
   const MEMBER_RE = /^TA[A-Z0-9]{10}$/;
   function newCode() { let c; do { c = Number(String(now()).slice(-9) + String(crypto.randomInt(0, 100)).padStart(2, '0')); } while (DB.orders.some(o => o.code === c)); return c; }
   const refOf = c => 'CTA' + c.toString(36).toUpperCase().slice(-6);
-  async function createOrder(b, req) { // chỉ dùng cho NẠP XU
-    const wc = String(b.wallet || ''); if (!MEMBER_RE.test(wc)) throw new Error('Mã ví không hợp lệ');
-    const xu = Math.round(+b.xu || 0); if (!(xu >= XU.min && xu <= XU.max)) throw new Error(`Nạp từ ${XU.min} đến ${XU.max} ${XU.name}`);
-    const name = clean(String(b.name || ''), 40).replace(/\*+/g, '').trim();
-    const o = { code: newCode(), type: 'topup', wallet: wc, xu, amount: xu * XU.rate, name, created: now(), status: 'pending', mode: MODE }; { const w = wallet(wc); w.ip = w.ip || ipOf(req); }
-    o.ref = refOf(o.code); o.expires = o.created + (CFG.orderMinutes || 30) * 60e3;
-    if (PAYOS) {
-      const base = ENV.PUBLIC_URL || ((req.headers['x-forwarded-proto'] || 'http') + '://' + req.headers.host);
-      const body = { orderCode: o.code, amount: o.amount, description: o.ref, returnUrl: `${base}/?don=${o.code}`, cancelUrl: `${base}/?don=${o.code}&huy=1`, expiredAt: Math.floor(o.expires / 1000) };
-      body.signature = hmac(`amount=${body.amount}&cancelUrl=${body.cancelUrl}&description=${body.description}&orderCode=${body.orderCode}&returnUrl=${body.returnUrl}`);
-      const r = await payosFetch('/v2/payment-requests', { method: 'POST', body: JSON.stringify(body) });
-      if (!r || r.code !== '00' || !r.data) throw new Error('PayOS chưa tạo được mã: ' + ((r && r.desc) || 'lỗi kết nối'));
-      o.payos = { qrCode: r.data.qrCode, checkoutUrl: r.data.checkoutUrl, bin: r.data.bin, accountNumber: r.data.accountNumber, accountName: r.data.accountName, description: r.data.description, id: r.data.paymentLinkId };
-    }
-    DB.orders.push(o); markDirty(); return o;
-  }
+  async function createOrder() { const e = new Error('Nạp xu đã ngừng. Hãy làm việc lành để có công đức, rồi đổi lấy xu.'); e.code = 'topup-off'; throw e; }
 
   /* ---------- xác nhận → thực hiện ---------- */
-  function fulfill(o, by) { // xác nhận nạp xu
-    if (o.status === 'paid') return false; o.status = 'paid'; o.paidAt = now(); o.by = by;
-    const w = wallet(o.wallet); const first = !w.topup; w.bal += o.xu; w.topup += o.xu; if (first && RF.trigger === 'first_topup') payReferral(w, o.wallet, 'first_topup'); toWallet && toWallet(o.wallet, { t: 'wallet', bal: w.bal, add: o.xu, code: o.code });
-    bcastAll({ t: 'order', code: o.code, status: 'paid' }); markDirty(); return true;
-  }
+  function fulfill(o) { if (!o || o.type === 'topup') return false; return false; } /* nạp xu không còn cộng xu */
   /* ---------- tiêu xu: trừ ngay, có hiệu lực ngay ---------- */
   function spend(b) {
     const wc = String(b.wallet || ''); if (!MEMBER_RE.test(wc)) throw new Error('Mã ví không hợp lệ');
@@ -217,6 +184,140 @@ module.exports = function installPay({ bodeAdd, DB, markDirty, bcastAll, clean, 
   }
   if (PAYOS) setInterval(() => { const t = now(); DB.orders.filter(o => o.status === 'pending' && o.mode === 'payos' && t - o.created < 40 * 60e3).slice(-20).forEach(checkPayos); }, 60000);
 
+  /* ---------- công đức (trần ngày, giờ VN) ---------- */
+  function cdCfg() {
+    const d = CFG.congduc || {};
+    const med = Object.assign({ perMinute: 1, maxMinutes: 14, maxGapSec: 45, minGapSec: 8, firstMinutes: 2, firstBonus: 1 }, d.meditate || {});
+    const sweep = Object.assign({ perMinute: 1, maxMinutes: 4, maxGapSec: 40, minGapSec: 8, firstMinutes: 0, firstBonus: 0 }, d.sweep || {});
+    const deeds = Object.assign({
+      lay: { cd: 1, daily: 2, label: 'Lễ Phật' }, huong: { cd: 2, daily: 2, label: 'Thắp hương' }, hoa: { cd: 1, daily: 1, label: 'Dâng hoa' },
+      bell: { cd: 1, daily: 1, label: 'Thỉnh chuông' }, khanh: { cd: 1, daily: 1, label: 'Chuông gia trì' }, mo: { cd: 1, daily: 1, label: 'Gõ mõ' },
+      feed: { cd: 1, daily: 1, label: 'Cho cá ăn' }, fish: { cd: 1, daily: 1, label: 'Thả cá' }, lantern: { cd: 2, daily: 2, label: 'Thả hoa đăng' },
+      candle: { cd: 1, daily: 1, label: 'Thắp nến' }, prayer: { cd: 1, daily: 1, label: 'Cầu nguyện' }, hat: { cd: 1, daily: 1, label: 'Tràng hạt' },
+      kinh: { cd: 1, daily: 1, label: 'Tụng kinh' }, checkin: { cd: 2, daily: 2, label: 'Điểm danh' }
+    }, d.deeds || {});
+    return { perXu: Math.max(1, +d.perXu || 10), dailyCap: Math.max(1, +d.dailyCap || 40), streakBonus: Math.max(0, +d.streakBonus || 0), meditate: med, sweep, deeds };
+  }
+  function rewardCfg() { const r = CFG.reward || {}; return { xu: Math.max(1, +r.xu || 1000), vnd: Math.max(1, +r.vnd || 100000) }; }
+  function roll(w) {
+    const day = vnDay();
+    if (w.cdDay !== day) { w.cdDay = day; w.cdToday = 0; w.cdActs = {}; w.medSec = 0; w.sweepSec = 0; w.medMin = 0; w.sweepMin = 0; w.streakGot = 0; }
+    if (w.cd == null) w.cd = 0; w.cdActs = w.cdActs || {};
+    return w;
+  }
+  function view(code) {
+    const w = roll(DB.wallets[code] || { bal: 0, cd: 0 }); const cd = cdCfg(); const per = cd.perXu;
+    const have = w.cd || 0;
+    return { bal: w.bal || 0, cd: have, cdToday: w.cdToday || 0, dailyCap: cd.dailyCap, perXu: per, toward: have % per, need: per, medMin: w.medMin || 0, sweepMin: w.sweepMin || 0, medMax: cd.meditate.maxMinutes, xuReady: Math.floor(have / per) };
+  }
+  function grant(w, raw, key, code, opt) {
+    roll(w); opt = opt || {}; const cap = cdCfg().dailyCap; const room = Math.max(0, cap - (w.cdToday || 0));
+    let base = Math.max(0, Math.floor(+raw || 0)), streakAdd = 0;
+    if (base > 0 && !w.streakGot) {
+      const prev = prevVnDay(w.cdDay);
+      if (w.streakDay === prev) w.streak = (w.streak || 0) + 1; else if (w.streakDay !== w.cdDay) w.streak = 1;
+      w.streakDay = w.cdDay; w.streakGot = 1;
+      if ((w.streak || 0) >= 2) streakAdd = cdCfg().streakBonus || 0;
+    }
+    const want = base + streakAdd; const add = Math.min(room, want);
+    if (add > 0) { w.cd = (w.cd || 0) + add; w.cdToday = (w.cdToday || 0) + add; if (key) w.cdActs[key] = (w.cdActs[key] || 0) + add; }
+    if (add > 0 && !opt.silentRef && !w.cdEver) { w.cdEver = now(); if (RF.trigger === 'first_deed') payReferral(w, code, 'first_deed'); }
+    const capped = want > 0 && add < want;
+    const out = Object.assign({ added: add, capped, streak: Math.min(streakAdd, add), label: (cdCfg().deeds[key] || {}).label || (key === 'thien' ? 'Ngồi thiền' : key === 'quetla' ? 'Quét lá' : ''), t: 'congduc' }, view(code));
+    if (!add && capped) out.msg = 'Hôm nay đã đủ ' + cap + ' công đức';
+    return out;
+  }
+  function deed(code, action) {
+    if (!MEMBER_RE.test(code || '')) return { t: 'congduc', added: 0, error: 'Cần có ví để ghi công đức' };
+    const spec = cdCfg().deeds[action];
+    if (!spec || !(spec.cd > 0) || !(spec.daily > 0)) return Object.assign({ t: 'congduc', added: 0 }, view(code));
+    const w = roll(wallet(code)); const got = w.cdActs[action] || 0;
+    if (got >= spec.daily) return Object.assign({ t: 'congduc', added: 0, capped: true, label: spec.label, msg: spec.label + ' hôm nay đã đủ' }, view(code));
+    const g = grant(w, Math.min(spec.cd, spec.daily - got), action, code);
+    if (g.added) g.msg = '+' + g.added + ' công đức · ' + (spec.label || '');
+    markDirty(); return g;
+  }
+  const SESS = new Map();
+  function onMerit(P, m) {
+    const code = P && P.wallet; if (!MEMBER_RE.test(code || '')) return { t: 'congduc', error: 'Cần có ví để ghi công đức' };
+    const op = String(m.op || 'deed'), a = String(m.a || '');
+    if (op === 'deed') return deed(code, a);
+    if (a !== 'thien' && a !== 'quetla') return { t: 'congduc', added: 0 };
+    const nowt = Date.now(), key = code + '|' + a, x = P.s ? +P.s[0] : 0, z = P.s ? +P.s[2] : 0;
+    const cfg = a === 'thien' ? cdCfg().meditate : cdCfg().sweep;
+    let ses = SESS.get(key);
+    if (!ses && (op === 'start' || op === 'beat' || op === 'end')) { SESS.set(key, { last: nowt, x, z, ax: x, az: z, acc: 0, mins: 0 }); ses = SESS.get(key); if (op !== 'end') return Object.assign({ t: 'congduc', started: 1 }, view(code)); }
+    if (!ses) return Object.assign({ t: 'congduc', added: 0 }, view(code));
+    const gap = (nowt - ses.last) / 1000; let sec = 0;
+    if (gap >= (cfg.minGapSec || 8) && gap <= (cfg.maxGapSec || 45)) {
+      if (a === 'thien') {
+        const dx = x - ses.ax, dz = z - ses.az;
+        if (dx * dx + dz * dz > 6.25) { ses.ax = x; ses.az = z; } else sec = gap;
+      } else {
+        const dx = x - ses.x, dz = z - ses.z;
+        if (dx * dx + dz * dz >= 0.16) { sec = gap; ses.x = x; ses.z = z; }
+      }
+    }
+    ses.last = nowt;
+    const w = roll(wallet(code)); const secKey = a === 'thien' ? 'medSec' : 'sweepSec', minKey = a === 'thien' ? 'medMin' : 'sweepMin';
+    sec = Math.min(sec, Math.max(0, cfg.maxMinutes * 60 - (w[secKey] || 0)));
+    w[secKey] = (w[secKey] || 0) + sec; ses.acc += sec;
+    let added = 0;
+    while (ses.acc >= 60 && (w[minKey] || 0) < cfg.maxMinutes) {
+      ses.acc -= 60; w[minKey] = (w[minKey] || 0) + 1; ses.mins++;
+      let cd = cfg.perMinute || 1; if (ses.mins <= (cfg.firstMinutes || 0)) cd += cfg.firstBonus || 0;
+      const g = grant(w, cd, a, code); added += g.added || 0;
+      if (!g.added && g.capped) break;
+    }
+    if (op === 'end') SESS.delete(key);
+    markDirty();
+    const mins = w[minKey] || 0;
+    const msg = added > 0 ? (a === 'thien' ? ('Bạn đã ngồi thiền ' + mins + ' phút · +' + added + ' công đức') : ('Bạn đã quét lá ' + mins + ' phút · +' + added + ' công đức')) : '';
+    return Object.assign({ t: 'congduc', added, msg }, view(code));
+  }
+  function convertCd(code) {
+    if (!MEMBER_RE.test(code || '')) throw new Error('Mã ví không hợp lệ');
+    const w = roll(wallet(code)); const per = cdCfg().perXu; const n = Math.floor((w.cd || 0) / per);
+    if (n < 1) throw new Error('Chưa đủ ' + per + ' công đức để đổi 1 xu');
+    w.cd -= n * per; w.bal = (w.bal || 0) + n; markDirty();
+    toWallet && toWallet(code, { t: 'wallet', bal: w.bal, add: n, why: 'congduc' });
+    return Object.assign({ ok: true, xu: n, msg: 'Đã đổi ' + (n * per) + ' công đức thành ' + n + ' xu' }, view(code));
+  }
+  function rewardMailText(rec) {
+    return ['Yêu cầu đổi thưởng Chùa Tâm An', '', 'Họ tên: ' + rec.name, 'Email: ' + rec.email, 'Ngân hàng: ' + rec.bankName, 'Chủ tài khoản: ' + rec.accountName, 'Số tài khoản: ' + rec.accountNo, rec.note ? ('Ghi chú: ' + rec.note) : '', 'Ví: ' + rec.wallet, 'Số xu đã trừ: ' + rec.xu, 'Số tiền nhờ chuyển: ' + rec.vnd + 'đ', 'Mã yêu cầu: ' + rec.id, '', 'Chủ chùa tự chuyển khoản. Nếu từ chối trong /admin, xu được trả lại.'].filter(Boolean).join('\n');
+  }
+  function rewardPublic(rec) { return { id: rec.id, t: rec.t, status: rec.status, xu: rec.xu, vnd: rec.vnd, mailed: !!rec.mailed }; }
+  function requestReward(b) {
+    const code = String(b.wallet || '').toUpperCase(); if (!MEMBER_RE.test(code)) throw new Error('Mã ví không hợp lệ');
+    const rw = rewardCfg(); const w = wallet(code); DB.rewards = DB.rewards || [];
+    if (DB.rewards.some(r => r.wallet === code && r.status === 'pending')) throw new Error('Bạn đang có một yêu cầu chờ chủ chùa xử lý');
+    if ((w.bal || 0) < rw.xu) throw new Error('Cần đủ ' + rw.xu.toLocaleString('vi-VN') + ' xu để đổi thưởng');
+    const name = clean(String(b.name || ''), 60).trim();
+    const email = String(b.email || '').trim().slice(0, 80);
+    const bankName = clean(String(b.bankName || ''), 60).trim();
+    const accountName = clean(String(b.accountName || ''), 80).trim();
+    const accountNo = String(b.accountNo || '').replace(/\s+/g, '').slice(0, 30);
+    const note = clean(String(b.note || ''), 200).trim();
+    if (name.length < 2) throw new Error('Xin ghi họ tên người nhận');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Xin ghi email của bạn');
+    if (bankName.length < 2 || accountName.length < 2 || accountNo.length < 4) throw new Error('Xin điền ngân hàng, tên chủ tài khoản và số tài khoản');
+    w.bal -= rw.xu;
+    const rec = { id: 'rw' + now().toString(36) + crypto.randomInt(0, 1296).toString(36), t: now(), wallet: code, name, email, bankName, accountNo, accountName, note, xu: rw.xu, vnd: rw.vnd, status: 'pending', mailed: false };
+    DB.rewards.push(rec); if (DB.rewards.length > 2000) DB.rewards = DB.rewards.slice(-2000);
+    markDirty();
+    const to = ownerEmail();
+    if (to) sendMail({ to, subject: 'Đổi thưởng Chùa Tâm An – ' + name, text: rewardMailText(rec) }).then(ok => { rec.mailed = !!ok; markDirty(); });
+    toWallet && toWallet(code, { t: 'wallet', bal: w.bal });
+    return { ok: true, id: rec.id, bal: w.bal, mailed: !!to, contactEmail: to, pending: true, msg: to ? 'Đã gửi thông tin cho chủ chùa và trừ ' + rw.xu.toLocaleString('vi-VN') + ' xu' : 'Đã ghi nhận yêu cầu và trừ xu. Chủ chùa xem trong trang quản trị.' };
+  }
+  function setReward(id, approve) {
+    const rec = (DB.rewards || []).find(r => r.id === id); if (!rec) return null;
+    if (rec.status !== 'pending') return rec;
+    if (approve) { rec.status = 'paid'; rec.paidAt = now(); }
+    else { rec.status = 'rejected'; rec.doneAt = now(); const w = wallet(rec.wallet); w.bal = (w.bal || 0) + rec.xu; toWallet && toWallet(rec.wallet, { t: 'wallet', bal: w.bal, add: rec.xu, why: 'reward-back' }); }
+    markDirty(); return rec;
+  }
+
   /* ---------- HTTP ---------- */
   const J = (res, code, o, h = {}) => { res.writeHead(code, Object.assign({ 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }, h)); res.end(JSON.stringify(o)); };
   const readBody = (req, max = 16384) => new Promise((ok, no) => { let s = ''; req.on('data', d => { s += d; if (s.length > max) { no(new Error('Quá lớn')); req.destroy(); } }); req.on('end', () => { try { ok(s ? JSON.parse(s) : {}); } catch (e) { no(new Error('JSON lỗi')); } }); });
@@ -247,7 +348,7 @@ module.exports = function installPay({ bodeAdd, DB, markDirty, bcastAll, clean, 
         const fp = path.join(__dirname, 'shopfiles', path.basename(it.file)); if (!fs.existsSync(fp)) return J(res, 404, { error: 'Thiếu tệp' }), true;
         const ext = path.extname(fp).slice(1); res.writeHead(200, { 'Content-Type': { jpg: 'image/jpeg', png: 'image/png', mp3: 'audio/mpeg', ogg: 'audio/ogg' }[ext] || 'application/octet-stream', 'Content-Disposition': `attachment; filename="${path.basename(fp)}"`, 'Cache-Control': 'private, no-store' });
         fs.createReadStream(fp).pipe(res); return true; }
-      if ((m = u.match(/^\/api\/wallet\/(TA[A-Z0-9]{10})$/))) { const w = DB.wallets[m[1]] || { bal: 0 }; if (DB.wallets[m[1]] && !w.ip) w.ip = ipOf(req); const mm = DB.members[m[1]]; return J(res, 200, { code: m[1], bal: w.bal, member: !!mm && mm.until > now(), until: mm ? mm.until : 0, refBy: w.ref || null, ref: refStats(m[1]) }), true; }
+      if ((m = u.match(/^\/api\/wallet\/(TA[A-Z0-9]{10})$/))) { const w = DB.wallets[m[1]] || { bal: 0 }; if (DB.wallets[m[1]] && !w.ip) w.ip = ipOf(req); const mm = DB.members[m[1]]; return J(res, 200, Object.assign({ code: m[1], member: !!mm && mm.until > now(), until: mm ? mm.until : 0, refBy: w.ref || null, ref: refStats(m[1]), contactEmail: ownerEmail() }, view(m[1]))), true; }
       if (u === '/api/wallet' && req.method === 'POST') { if (limited(req, 'w', +ENV.WALLET_RATE || 30, 3600e3)) return J(res, 429, { error: 'Thử lại sau' }), true; const b = await readBody(req); const wc = String(b.wallet || ''); if (!MEMBER_RE.test(wc)) return J(res, 400, { error: 'Mã không hợp lệ' }), true; const w = wallet(wc); w.ip = w.ip || ipOf(req); markDirty(); return J(res, 200, { bal: w.bal }), true; }
       if (u === '/api/ref/claim' && req.method === 'POST') { if (limited(req, 'r', 5, 3600e3)) return J(res, 429, { error: 'Thử lại sau' }), true; const b = await readBody(req); return J(res, 200, claimRef(b, req)), true; }
       
@@ -283,11 +384,15 @@ module.exports = function installPay({ bodeAdd, DB, markDirty, bcastAll, clean, 
         return J(res, 200, { ok: true, cfg: checkinCfg() }), true;
       }
 
+      if (u === '/api/congduc/convert' && req.method === 'POST') { if (limited(req, 'cv', 30, 600e3)) return J(res, 429, { error: 'Xin chậm lại một chút 🙏' }), true;
+        const b = await readBody(req); try { return J(res, 200, convertCd(String(b.wallet || '').toUpperCase())), true; } catch (e) { return J(res, 400, { error: e.message }), true; } }
+      if (u === '/api/reward' && req.method === 'POST') { if (limited(req, 'rw', 8, 3600e3)) return J(res, 429, { error: 'Xin chậm lại một chút 🙏' }), true;
+        const b = await readBody(req, 8000); try { return J(res, 200, requestReward(b)), true; } catch (e) { return J(res, 400, { error: e.message }), true; } }
+      if ((m = u.match(/^\/api\/reward\/(TA[A-Z0-9]{10})$/)) && req.method === 'GET') { const list = (DB.rewards || []).filter(r => r.wallet === m[1]).slice(-10).reverse().map(rewardPublic); return J(res, 200, { list, contactEmail: ownerEmail(), reward: rewardCfg() }), true; }
       if (u === '/api/spend' && req.method === 'POST') { if (limited(req, 's', 40, 600e3)) return J(res, 429, { error: 'Xin chậm lại một chút 🙏' }), true;
         const b = await readBody(req); try { return J(res, 200, spend(b)), true; } catch (e) { return J(res, 400, { error: e.message, need: e.need || 0 }), true; } }
       if ((m = u.match(/^\/api\/member\/(TA[A-Z0-9]{10})$/))) { const mm = DB.members[m[1]]; return J(res, 200, { code: m[1], active: !!mm && mm.until > now(), until: mm ? mm.until : 0 }), true; }
-      if (u === '/api/order' && req.method === 'POST') { if (limited(req, 'o', +ENV.ORDER_RATE || 10, 600e3)) return J(res, 429, { error: 'Bạn tạo hơi nhiều đơn, xin đợi ít phút rồi thử lại 🙏' }), true;
-        const b = await readBody(req); const o = await createOrder(b, req); return J(res, 200, { order: pub(o) }), true; }
+      if (u === '/api/order' && req.method === 'POST') { return J(res, 410, { error: 'Nạp xu đã ngừng. Hãy làm việc lành để có công đức, rồi đổi lấy xu.' }), true; }
       if ((m = u.match(/^\/api\/order\/(\d{6,15})$/))) { const o = DB.orders.find(x => x.code === +m[1]); if (!o) return J(res, 404, { error: 'Không thấy đơn' }), true; await checkPayos(o); return J(res, 200, { order: pub(o) }), true; }
       if ((m = u.match(/^\/api\/order\/(\d{6,15})\/cancel$/)) && req.method === 'POST') { const o = DB.orders.find(x => x.code === +m[1]); if (o && o.status === 'pending') { o.status = 'cancelled'; markDirty(); } return J(res, 200, { ok: true }), true; }
       if ((m = u.match(/^\/api\/order\/(\d{6,15})\/test-pay$/)) && req.method === 'POST') { if (!TEST) return J(res, 403, { error: 'Chỉ dùng khi PAY_TEST=1' }), true; const o = DB.orders.find(x => x.code === +m[1]); if (!o) return J(res, 404, {}), true; fulfill(o, 'test'); return J(res, 200, { order: pub(o) }), true; }
@@ -306,7 +411,7 @@ module.exports = function installPay({ bodeAdd, DB, markDirty, bcastAll, clean, 
           return J(res, 200, { mode: MODE, vietqrReady: VQ_READY, xuName: XU.name, rate: XU.rate,
             orders: DB.orders.slice(-300).reverse().map(o => Object.assign(pub(o), { by: o.by })),
             spends: DB.spends.slice(-100).reverse().map(x => ({ t: x.t, type: x.type, name: x.anon ? 'Ẩn danh' : x.name, xu: x.xu, wallet: x.wallet, item: x.item, names: x.names, kind: x.kind, msg: x.msg })),
-            referral: { reward: RF.reward, trigger: RF.trigger, log: DB.refLog.slice(-100).reverse(),
+            referral: { reward: 0, rewardCd: RF.rewardCd, trigger: RF.trigger, log: DB.refLog.slice(-100).reverse(),
               pending: Object.entries(DB.wallets).filter(([, w]) => w.ref && !w.refPaid).slice(-100).map(([k, w]) => ({ invited: k, ref: w.ref, at: w.refAt })),
               top: Object.entries(DB.wallets).filter(([, w]) => w.refEarned).sort((a, b2) => b2[1].refEarned - a[1].refEarned).slice(0, 20).map(([k, w]) => Object.assign({ code: k }, refStats(k))) },
             stats: { total: sum(paid), d1: sum(since(1)), d7: sum(since(7)), d30: sum(since(30)), nPaid: paid.length, nPending: by('pending').length, members: Object.values(DB.members).filter(mm => mm.until > t).length,
@@ -332,7 +437,10 @@ module.exports = function installPay({ bodeAdd, DB, markDirty, bcastAll, clean, 
           const L = stories(); let st = L.find(x => x.id === b.id); if (!st) { st = { id: 's' + now().toString(36), t: now() }; L.push(st); }
           Object.assign(st, { title, cat: ['nhanqua', 'tienthan', 'thiensu', 'khac'].includes(b.cat) ? b.cat : 'khac', text, img: b.img === undefined ? st.img || '' : img, upd: now() }); saveStories(L); return J(res, 200, { ok: true, story: st }), true; }
         if ((m = u.match(/^\/admin\/api\/stories\/([a-z0-9]+)\/del$/)) && req.method === 'POST') { saveStories(stories().filter(x => x.id !== m[1])); return J(res, 200, { ok: true }), true; }
+        if (u === '/admin/api/rewards') { const list = (DB.rewards || []).slice().reverse().slice(0, 200).map(r => ({ id: r.id, t: r.t, wallet: r.wallet, name: r.name, email: r.email, bankName: r.bankName, accountName: r.accountName, accountNo: r.accountNo, note: r.note, xu: r.xu, vnd: r.vnd, status: r.status, mailed: !!r.mailed })); return J(res, 200, { list, contactEmail: ownerEmail() }), true; }
+        if ((m = u.match(/^\/admin\/api\/rewards\/([a-z0-9]+)\/(approve|reject)$/)) && req.method === 'POST') { const rec = setReward(m[1], m[2] === 'approve'); if (!rec) return J(res, 404, { error: 'Không thấy yêu cầu' }), true; return J(res, 200, { ok: true, status: rec.status }), true; }
         if ((m = u.match(/^\/admin\/api\/orders\/(\d+)\/(confirm|reject)$/)) && req.method === 'POST') { const o = DB.orders.find(x => x.code === +m[1]); if (!o) return J(res, 404, { error: 'Không thấy' }), true;
+          if (o.type === 'topup') return J(res, 410, { error: 'Nạp xu đã tắt, không duyệt thêm' }), true;
           const ok = m[2] === 'confirm' ? fulfill(o, 'admin') : reject(o, 'admin'); return J(res, 200, { ok, order: pub(o) }), true; }
         if (u === '/admin' || u === '/admin/') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY' }); res.end(fs.readFileSync(path.join(__dirname, 'admin.html'))); return true; }
         res.writeHead(404); res.end(); return true;
@@ -341,5 +449,5 @@ module.exports = function installPay({ bodeAdd, DB, markDirty, bcastAll, clean, 
     return false;
   }
   const isMember = c => MEMBER_RE.test(String(c || '')) && DB.members[c] && DB.members[c].until > now();
-  return { hasItem, invOf, shopList, handle, board, activePremium, activePB, isMember, publicConfig, MODE, sigData, fulfill, spend, auth: AUTH };
+  return { hasItem, invOf, shopList, handle, board, activePremium, activePB, isMember, publicConfig, MODE, sigData, fulfill, spend, auth: AUTH, deed, onMerit, view };
 };
